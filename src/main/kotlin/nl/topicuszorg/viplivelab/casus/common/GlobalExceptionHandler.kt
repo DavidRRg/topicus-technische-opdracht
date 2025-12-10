@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import nl.topicuszorg.viplivelab.casus.appointment.domain.exception.*
 import nl.topicuszorg.viplivelab.casus.common.ErrorResponse
+import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
@@ -35,6 +37,20 @@ class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.NOT_FOUND)
             .body(ErrorResponse("NO_FREE_SLOT", ex.message ?: "No free slot available"))
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException::class, MethodArgumentTypeMismatchException::class)
+    fun handleBadRequest(ex: Exception): ResponseEntity<ErrorResponse> {
+        log.warn("Invalid request payload or parameter", ex)
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(
+                ErrorResponse(
+                    code = "INVALID_REQUEST",
+                    message = "Request body or parameters could not be parsed. " +
+                            "Make sure date-time fields include a timezone (e.g. 2025-01-01T09:00:00+01:00[Europe/Amsterdam])."
+                )
+            )
     }
 
     @ExceptionHandler(Exception::class)
